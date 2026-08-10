@@ -1,0 +1,6 @@
+# Phase 3 dependencies — Flask + PyMySQL
+# PyMySQL chosen because it is pure Python (no C compiler needed on Windows)
+# and works reliably with Python 3.14.
+# Phase 4+ may add gunicorn when Flask is containerised.
+flask
+pymysql
