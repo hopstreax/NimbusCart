@@ -7,11 +7,11 @@ A simple product-catalog web application built phase-by-phase.
 ```
 Browser
   ↓
-Flask API  (python app/api/app.py)
+Flask API  (python app/api/app.py)  [Host Machine]
   ↓
-MySQL 8.0  (Windows service / Docker)
+MySQL 8.0  (Docker Container: nimbuscart_mysql)
   ↓
-products table
+products table  (Auto-created by Flask at startup)
 ```
 
 ---
@@ -19,12 +19,6 @@ products table
 ## Phase 1 — Static Frontend
 
 Single-file HTML/CSS/JS at `app/frontend/index.html`.
-
-To run standalone (with mock data):
-```powershell
-python -m http.server 8000 --directory .
-# Open http://127.0.0.1:8000/app/frontend/index.html
-```
 
 ---
 
@@ -34,157 +28,97 @@ Simple Flask REST API, no database.
 
 ---
 
-## Phase 3 — Flask API + MySQL
+## Phase 3 — Flask API + Docker MySQL
 
-### Prerequisites
+### 1. MySQL Docker Setup
 
-- Python 3.x
-- MySQL 8.0 running and accessible
-- A `nimbuscart` database and `nimbususer` user (see setup below)
-
----
-
-### 1. MySQL Setup
-
-#### Option A — MySQL already installed on Windows
-
-Run the setup script once (requires root credentials):
-```powershell
-mysql -u root -p < app\api\setup_mysql.sql
-```
-
-Or run manually:
-```sql
-CREATE DATABASE IF NOT EXISTS nimbuscart CHARACTER SET utf8mb4;
-CREATE USER IF NOT EXISTS 'nimbususer'@'localhost' IDENTIFIED BY 'nimbuspass';
-GRANT ALL PRIVILEGES ON nimbuscart.* TO 'nimbususer'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-#### Option B — MySQL via Docker (if Docker is available)
+Start the local MySQL database using Docker Compose:
 
 ```powershell
-docker compose -f app\api\docker-compose.yml up -d
+docker compose up -d
 ```
+
+- MySQL 8.0 runs inside a Docker container (`nimbuscart_mysql`)
+- Listens on host port `3307` mapped to container port `3306` (preserving host services)
+- Data persists in the `mysql_data` Docker volume
 
 ---
 
 ### 2. Environment Variables
 
-Set these in PowerShell before starting Flask:
+Environment variables are defined in `.env`:
+
+```env
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3307
+MYSQL_DATABASE=nimbuscart
+MYSQL_USER=nimbususer
+MYSQL_PASSWORD=nimbuspass
+MYSQL_ROOT_PASSWORD=nimbusrootpass
+```
+
+You can also export them in PowerShell if needed:
 
 ```powershell
 $env:MYSQL_HOST     = "127.0.0.1"
-$env:MYSQL_PORT     = "3306"
+$env:MYSQL_PORT     = "3307"
 $env:MYSQL_DATABASE = "nimbuscart"
 $env:MYSQL_USER     = "nimbususer"
 $env:MYSQL_PASSWORD = "nimbuspass"
 ```
 
-Or copy `app/api/.env` and `source` it (requires python-dotenv, not used here).
-
-**Default values** (if env vars are not set) match the docker-compose.yml defaults above, so local dev works without setting anything if using Docker or the same credentials.
-
 ---
 
-### 3. Install Python Dependencies
+### 3. Install Dependencies & Start Flask
 
 ```powershell
 pip install -r app\api\requirements.txt
-```
-
-Installs: `flask`, `pymysql`
-
----
-
-### 4. Start Flask
-
-```powershell
 python app\api\app.py
 ```
 
 **What happens on startup:**
-1. Reads MySQL config from environment variables (or uses defaults)
-2. Connects to MySQL
-3. Runs `CREATE TABLE IF NOT EXISTS products (...)` — **automatic, no manual SQL needed**
-4. Starts serving on `http://127.0.0.1:5000`
-
-> If MySQL is not running, Flask exits with a clear error message.
+1. Connects to MySQL container at `127.0.0.1:3307`
+2. Runs `CREATE TABLE IF NOT EXISTS products (...)` automatically
+3. Serves the application on `http://127.0.0.1:5000`
 
 ---
 
-### 5. API Endpoints
+### 4. API Endpoints
 
 | Method | URL | Description |
 |---|---|---|
-| GET | `/health` | Health check — always returns `{"status":"ok"}`, even if DB is down |
-| GET | `/api/items` | List all products |
-| POST | `/api/items` | Create a product |
-| GET | `/` | Serves the Phase 1 frontend |
-
-**POST body:**
-```json
-{ "name": "Laptop", "price": 60000, "stock": 10 }
-```
+| GET | `/health` | Health check — returns `{"status":"ok"}`, even if DB is offline |
+| GET | `/api/items` | List all products from MySQL |
+| POST | `/api/items` | Insert product into MySQL |
+| GET | `/` | Serves the frontend (`app/frontend/index.html`) |
 
 ---
 
-### 6. Run Tests
+### 5. Verification & Tests
 
 ```powershell
-# API test suite (Flask must be running)
+# Phase 3 API test suite
 python app\api\test_phase3.py
 
-# Integration test
+# Frontend + API integration test
 python app\api\test_integration.py
 ```
-
----
-
-### 7. Database Initialization
-
-The Flask application automatically runs:
-```sql
-CREATE TABLE IF NOT EXISTS products (
-    id    INT           AUTO_INCREMENT PRIMARY KEY,
-    name  VARCHAR(255)  NOT NULL,
-    price DECIMAL(12,2) NOT NULL,
-    stock INT           NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
-
-on every startup. `IF NOT EXISTS` means:
-- First run: table is created
-- Subsequent runs: existing table (and data) is left untouched
-
-**No manual `CREATE TABLE` is ever needed.**
-
----
-
-### 8. Data Persistence
-
-Products survive:
-- Flask restarts (data is in MySQL, not in Python memory)
-- MySQL service restarts (data is on disk)
-
-Products are lost only if:
-- The database is dropped: `DROP DATABASE nimbuscart;`
-- The Docker volume is deleted: `docker compose down -v`
 
 ---
 
 ## Project Structure
 
 ```
-app/
-├── frontend/
-│   └── index.html              ← Phase 1 static frontend
-└── api/
-    ├── app.py                  ← Flask application (Phase 3)
-    ├── requirements.txt        ← flask + pymysql
-    ├── docker-compose.yml      ← MySQL 8.0 via Docker (optional)
-    ├── .env                    ← local dev defaults (not committed)
-    ├── setup_mysql.sql         ← one-time DB setup script
-    ├── test_phase3.py          ← Phase 3 test suite
-    └── test_integration.py     ← integration test
+.
+├── .env                    ← Local dev environment variables
+├── docker-compose.yml      ← MySQL 8.0 Docker configuration
+├── README.md               ← Documentation
+└── app/
+    ├── frontend/
+    │   └── index.html      ← Phase 1/3 frontend
+    └── api/
+        ├── app.py          ← Flask REST API (Phase 3)
+        ├── requirements.txt← Python dependencies (flask, pymysql)
+        ├── test_phase3.py  ← Phase 3 test suite
+        └── test_integration.py ← Integration test suite
 ```

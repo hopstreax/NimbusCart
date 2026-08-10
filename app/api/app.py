@@ -54,11 +54,11 @@ app = Flask(__name__, static_folder=None)
 # Defaults point to the local Docker Compose setup defined in docker-compose.yml.
 
 DB_CONFIG = {
-    "host":    os.environ.get("MYSQL_HOST",     "127.0.0.1"),
-    "port":    int(os.environ.get("MYSQL_PORT", "3306")),
-    "db":      os.environ.get("MYSQL_DATABASE", "nimbuscart"),
-    "user":    os.environ.get("MYSQL_USER",     "nimbususer"),
-    "passwd":  os.environ.get("MYSQL_PASSWORD", "nimbuspass"),
+    "host":     os.environ.get("MYSQL_HOST",     "127.0.0.1"),
+    "port":     int(os.environ.get("MYSQL_PORT", "3307")),
+    "database": os.environ.get("MYSQL_DATABASE", "nimbuscart"),
+    "user":     os.environ.get("MYSQL_USER",     "nimbususer"),
+    "password": os.environ.get("MYSQL_PASSWORD", "nimbuspass"),
     "charset": "utf8mb4",
     # Return rows as dicts ({"id": 1, "name": "Laptop", ...}) instead of tuples
     "cursorclass": pymysql.cursors.DictCursor,
@@ -256,7 +256,7 @@ def create_item():
 if __name__ == "__main__":
     print("NimbusCart Phase 3 — Flask + MySQL")
     print(f"  DB host : {DB_CONFIG['host']}:{DB_CONFIG['port']}")
-    print(f"  DB name : {DB_CONFIG['db']}")
+    print(f"  DB name : {DB_CONFIG['database']}")
     print(f"  DB user : {DB_CONFIG['user']}")
 
     # Auto-create the products table on startup (requirement of the assignment)

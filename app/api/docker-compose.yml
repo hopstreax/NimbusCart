@@ -17,13 +17,13 @@ services:
     container_name: nimbuscart_mysql
     restart: unless-stopped
     environment:
-      # All values are read from the .env file — nothing is hardcoded here
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE:      ${MYSQL_DATABASE}
-      MYSQL_USER:          ${MYSQL_USER}
-      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
+      # All values are read from .env — with safe local dev fallbacks
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-nimbusrootpass}
+      MYSQL_DATABASE:      ${MYSQL_DATABASE:-nimbuscart}
+      MYSQL_USER:          ${MYSQL_USER:-nimbususer}
+      MYSQL_PASSWORD:      ${MYSQL_PASSWORD:-nimbuspass}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       # Named volume — MySQL data survives container restarts
       - mysql_data:/var/lib/mysql
