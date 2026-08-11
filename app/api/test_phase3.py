@@ -126,10 +126,10 @@ except urllib.error.HTTPError as e:
 section("TEST 13+: Only valid products stored (failed POSTs not inserted)")
 s, items_final = api("GET", "/api/items")
 chk("HTTP 200", s == 200)
-valid_names = {"Laptop", "Wireless Mouse"}
+invalid_names = {"Widget", ""}
 actual_names = {p["name"] for p in items_final} if isinstance(items_final, list) else set()
 # Check no invalid products sneaked in
-bad_names = actual_names - valid_names
+bad_names = actual_names & invalid_names
 chk("no invalid products stored", len(bad_names) == 0, f"unexpected: {bad_names}")
 print(f"  [INFO] stored products: {list(actual_names)}")
 

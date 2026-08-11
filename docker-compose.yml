@@ -1,4 +1,4 @@
-# NimbusCart — Phase 3 local MySQL via Docker
+# NimbusCart — Phase 5 local Docker Compose (Flask API + MySQL Database)
 
 services:
   mysql:
@@ -15,12 +15,30 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1",
-             "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: app/api/Dockerfile
+    image: nimbuscart-api:local
+    container_name: nimbuscart_api
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST:     mysql
+      MYSQL_PORT:     "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-nimbuscart}
+      MYSQL_USER:     ${MYSQL_USER:-nimbususer}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
 
 volumes:
   mysql_data:

@@ -55,7 +55,7 @@ app = Flask(__name__, static_folder=None)
 
 DB_CONFIG = {
     "host":     os.environ.get("MYSQL_HOST",     "127.0.0.1"),
-    "port":     int(os.environ.get("MYSQL_PORT", "3307")),
+    "port":     int(os.environ.get("MYSQL_PORT", "3306")),
     "database": os.environ.get("MYSQL_DATABASE", "nimbuscart"),
     "user":     os.environ.get("MYSQL_USER",     "nimbususer"),
     "password": os.environ.get("MYSQL_PASSWORD", "nimbuspass"),
@@ -267,6 +267,8 @@ if __name__ == "__main__":
         print("  Make sure MySQL is running and environment variables are set.")
         raise SystemExit(1)
 
-    print("Starting Flask on http://127.0.0.1:5000")
-    print("Frontend: http://127.0.0.1:5000/")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    host = os.environ.get("FLASK_HOST", "0.0.0.0")
+    port = int(os.environ.get("FLASK_PORT", 5000))
+    print(f"Starting Flask on http://{host}:{port}")
+    print(f"Frontend: http://{host}:{port}/")
+    app.run(host=host, port=port, debug=True)
